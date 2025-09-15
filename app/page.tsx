@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 
 interface Product {
@@ -29,7 +29,7 @@ interface ApiResponse {
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<
-    'search' | 'goldbox' | 'coupangpl'
+    'search' | 'goldbox' | 'coupangpl' | 'recommendation'
   >('search');
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<ApiResponse | null>(null);
@@ -48,6 +48,91 @@ export default function Home() {
   const [coupangplLimit, setCoupangplLimit] = useState(20);
   const [coupangplSubId, setCoupangplSubId] = useState('');
   const [coupangplImageSize, setCoupangplImageSize] = useState('512x512');
+
+  // Recommendation form state
+  const [recommendationDeviceId, setRecommendationDeviceId] = useState('');
+  const [recommendationSubId, setRecommendationSubId] = useState('');
+  const [recommendationImageSize, setRecommendationImageSize] = useState('512x512');
+  const [isMobile, setIsMobile] = useState(false);
+  const [deviceIdMethod, setDeviceIdMethod] = useState<'auto' | 'manual'>('auto');
+
+  // 디바이스 감지 및 Device ID 생성
+  useEffect(() => {
+    const checkMobile = () => {
+      const userAgent = navigator.userAgent;
+      const mobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+      setIsMobile(mobile);
+
+      if (mobile) {
+        // 모바일인 경우 실제 디바이스 ID 획득을 시도하지만, 웹에서는 제한적
+        // 대신 localStorage 기반 UUID 생성
+        let deviceId = localStorage.getItem('mobile_device_id');
+        if (!deviceId) {
+          deviceId = generateUUID();
+          localStorage.setItem('mobile_device_id', deviceId);
+        }
+        setRecommendationDeviceId(deviceId);
+      } else {
+        // PC인 경우 브라우저 기반 고유 ID 생성
+        let deviceId = localStorage.getItem('pc_device_id');
+        if (!deviceId) {
+          deviceId = generatePCDeviceId();
+          localStorage.setItem('pc_device_id', deviceId);
+        }
+        setRecommendationDeviceId(deviceId);
+      }
+    };
+
+    checkMobile();
+  }, []);
+
+  // UUID 생성 함수
+  const generateUUID = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  };
+
+  // PC용 디바이스 ID 생성 (브라우저 특성 기반)
+  const generatePCDeviceId = () => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.textBaseline = 'top';
+      ctx.font = '14px Arial';
+      ctx.fillText('Device fingerprint', 2, 2);
+    }
+
+    const fingerprint = [
+      navigator.userAgent,
+      navigator.language,
+      screen.width + 'x' + screen.height,
+      new Date().getTimezoneOffset(),
+      canvas.toDataURL()
+    ].join('|');
+
+    // 간단한 해시 생성
+    let hash = 0;
+    for (let i = 0; i < fingerprint.length; i++) {
+      const char = fingerprint.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+
+    return Math.abs(hash).toString(16).padStart(8, '0');
+  };
+
+  // Device ID 재생성
+  const regenerateDeviceId = () => {
+    const key = isMobile ? 'mobile_device_id' : 'pc_device_id';
+    localStorage.removeItem(key);
+
+    const newDeviceId = isMobile ? generateUUID() : generatePCDeviceId();
+    localStorage.setItem(key, newDeviceId);
+    setRecommendationDeviceId(newDeviceId);
+  };
 
   const handleSearch = async () => {
     setLoading(true);
@@ -119,6 +204,34 @@ export default function Home() {
 
       if (!res.ok) {
         throw new Error(data.error || 'CoupangPL failed');
+      }
+
+      setResponse(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRecommendation = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams({
+        deviceId: recommendationDeviceId,
+        imageSize: recommendationImageSize
+      });
+
+      if (recommendationSubId) {
+        params.append('subId', recommendationSubId);
+      }
+
+      const res = await fetch(`/api/products/recommendation?${params}`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Recommendation failed');
       }
 
       setResponse(data);
@@ -201,7 +314,7 @@ export default function Home() {
         {/* Tab Navigation */}
         <div className="flex justify-center mb-8">
           <div className="bg-white rounded-lg p-1 shadow-sm">
-            {(['search', 'goldbox', 'coupangpl'] as const).map((tab) => (
+            {(['search', 'goldbox', 'coupangpl', 'recommendation'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -214,6 +327,7 @@ export default function Home() {
                 {tab === 'search' && '상품 검색'}
                 {tab === 'goldbox' && 'GoldBox'}
                 {tab === 'coupangpl' && 'CoupangPL'}
+                {tab === 'recommendation' && '개인화 추천'}
               </button>
             ))}
           </div>
@@ -376,6 +490,132 @@ export default function Home() {
                 className="w-full bg-purple-500 text-white py-3 px-6 rounded-lg text-lg font-semibold hover:bg-purple-600 disabled:opacity-50 transition-colors"
               >
                 {loading ? '로딩 중...' : 'CoupangPL 상품 가져오기'}
+              </button>
+            </div>
+          )}
+
+          {activeTab === 'recommendation' && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold mb-6 text-gray-800">
+                개인화 추천
+              </h2>
+              <div className="space-y-6">
+                {/* Device ID 섹션 */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      Device ID 설정
+                    </h3>
+                    <div className="flex items-center space-x-4">
+                      <span className={`px-3 py-1 rounded-lg text-sm font-medium ${
+                        isMobile
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {isMobile ? '📱 모바일' : '💻 PC'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={regenerateDeviceId}
+                        className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
+                      >
+                        🔄 새로 생성
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                    <p className="text-sm text-gray-600 mb-2">
+                      {isMobile
+                        ? '📱 모바일 환경: 브라우저 기반 고유 ID가 자동 생성되었습니다.'
+                        : '💻 PC 환경: 브라우저 특성 기반 고유 ID가 자동 생성되었습니다.'}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      * 실제 앱에서는 {isMobile ? 'ADID/GAID/IDFA' : '브라우저 쿠키나 로그인 기반 ID'}를 사용합니다.
+                    </p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex space-x-4">
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="deviceIdMethod"
+                          value="auto"
+                          checked={deviceIdMethod === 'auto'}
+                          onChange={(e) => setDeviceIdMethod(e.target.value as 'auto' | 'manual')}
+                          className="mr-2"
+                        />
+                        자동 생성 ID 사용
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="deviceIdMethod"
+                          value="manual"
+                          checked={deviceIdMethod === 'manual'}
+                          onChange={(e) => setDeviceIdMethod(e.target.value as 'auto' | 'manual')}
+                          className="mr-2"
+                        />
+                        직접 입력
+                      </label>
+                    </div>
+
+                    <div>
+                      <label className="block text-base font-semibold text-gray-800 mb-2">
+                        Device ID {deviceIdMethod === 'manual' ? '(직접 입력)' : '(자동 생성)'}
+                      </label>
+                      <input
+                        type="text"
+                        value={recommendationDeviceId}
+                        onChange={(e) => setRecommendationDeviceId(e.target.value)}
+                        disabled={deviceIdMethod === 'auto'}
+                        className={`w-full px-4 py-3 border border-gray-300 rounded-lg text-base placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                          deviceIdMethod === 'auto'
+                            ? 'bg-gray-50 text-gray-700 cursor-not-allowed'
+                            : 'text-gray-900 bg-white'
+                        }`}
+                        placeholder={deviceIdMethod === 'manual' ? 'ADID, GAID 또는 IDFA 입력' : '자동 생성된 ID'}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-base font-semibold text-gray-800 mb-2">
+                      Sub ID (선택사항)
+                    </label>
+                    <input
+                      type="text"
+                      value={recommendationSubId}
+                      onChange={(e) => setRecommendationSubId(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      placeholder="통계용 Sub ID"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-base font-semibold text-gray-800 mb-2">
+                      이미지 크기
+                    </label>
+                    <select
+                      value={recommendationImageSize}
+                      onChange={(e) => setRecommendationImageSize(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    >
+                      <option value="230x230">230x230</option>
+                      <option value="300x300">300x300</option>
+                      <option value="512x512">512x512</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={handleRecommendation}
+                disabled={loading || !recommendationDeviceId}
+                className="w-full bg-green-500 text-white py-3 px-6 rounded-lg text-lg font-semibold hover:bg-green-600 disabled:opacity-50 transition-colors"
+              >
+                {loading ? '로딩 중...' : '개인화 추천 상품 가져오기'}
               </button>
             </div>
           )}
