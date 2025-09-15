@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const response = await client.coupangPL({
       limit,
       subId,
-      imageSize: imageSize as any
+      imageSize: imageSize as '230x230' | '300x300' | '512x512'
     });
 
     return NextResponse.json(response);

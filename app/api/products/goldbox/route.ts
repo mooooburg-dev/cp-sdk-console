@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
 
     const response = await client.goldbox({
       subId,
-      imageSize: imageSize as any
+      imageSize: imageSize as '72x72' | '120x120' | '230x230' | '300x300' | '600x600'
     });
 
     return NextResponse.json(response);
