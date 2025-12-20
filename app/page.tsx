@@ -29,7 +29,7 @@ interface ApiResponse {
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<
-    'search' | 'goldbox' | 'coupangpl' | 'recommendation'
+    'search' | 'goldbox' | 'coupangpl' | 'recommendation' | 'deeplink'
   >('search');
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<ApiResponse | null>(null);
@@ -52,15 +52,28 @@ export default function Home() {
   // Recommendation form state
   const [recommendationDeviceId, setRecommendationDeviceId] = useState('');
   const [recommendationSubId, setRecommendationSubId] = useState('');
-  const [recommendationImageSize, setRecommendationImageSize] = useState('512x512');
+  const [recommendationImageSize, setRecommendationImageSize] =
+    useState('512x512');
   const [isMobile, setIsMobile] = useState(false);
-  const [deviceIdMethod, setDeviceIdMethod] = useState<'auto' | 'manual'>('auto');
+  const [deviceIdMethod, setDeviceIdMethod] = useState<'auto' | 'manual'>(
+    'auto'
+  );
+
+  // Deeplink form state
+  const [deeplinkUrl, setDeeplinkUrl] = useState(
+    'https://www.coupang.com/vp/products/1234567890'
+  );
+  const [deeplinkSubId, setDeeplinkSubId] = useState('');
+  const [deeplinkResult, setDeeplinkResult] = useState<string | null>(null);
 
   // 디바이스 감지 및 Device ID 생성
   useEffect(() => {
     const checkMobile = () => {
       const userAgent = navigator.userAgent;
-      const mobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+      const mobile =
+        /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          userAgent
+        );
       setIsMobile(mobile);
 
       if (mobile) {
@@ -88,11 +101,14 @@ export default function Home() {
 
   // UUID 생성 함수
   const generateUUID = () => {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      const r = Math.random() * 16 | 0;
-      const v = c === 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(
+      /[xy]/g,
+      function (c) {
+        const r = (Math.random() * 16) | 0;
+        const v = c === 'x' ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+      }
+    );
   };
 
   // PC용 디바이스 ID 생성 (브라우저 특성 기반)
@@ -110,14 +126,14 @@ export default function Home() {
       navigator.language,
       screen.width + 'x' + screen.height,
       new Date().getTimezoneOffset(),
-      canvas.toDataURL()
+      canvas.toDataURL(),
     ].join('|');
 
     // 간단한 해시 생성
     let hash = 0;
     for (let i = 0; i < fingerprint.length; i++) {
       const char = fingerprint.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash;
     }
 
@@ -220,7 +236,7 @@ export default function Home() {
     try {
       const params = new URLSearchParams({
         deviceId: recommendationDeviceId,
-        imageSize: recommendationImageSize
+        imageSize: recommendationImageSize,
       });
 
       if (recommendationSubId) {
@@ -234,6 +250,43 @@ export default function Home() {
         throw new Error(data.error || 'Recommendation failed');
       }
 
+      setResponse(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeeplink = async () => {
+    setLoading(true);
+    setError(null);
+    setDeeplinkResult(null);
+    try {
+      const params = new URLSearchParams({
+        url: deeplinkUrl,
+      });
+
+      if (deeplinkSubId) {
+        params.append('subId', deeplinkSubId);
+      }
+
+      const res = await fetch(`/api/deeplink?${params}`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Deeplink generation failed');
+      }
+
+      // Deeplink는 배열 형태로 반환되므로 첫 번째 항목의 shortenUrl 추출
+      if (
+        data.rCode === '0' &&
+        data.data &&
+        Array.isArray(data.data) &&
+        data.data.length > 0
+      ) {
+        setDeeplinkResult(data.data[0].shortenUrl);
+      }
       setResponse(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
@@ -271,7 +324,7 @@ export default function Home() {
               {product.productName}
             </h3>
             <p className="text-xl font-bold text-blue-600 mb-3">
-              ₩{product.productPrice.toLocaleString()}
+              ₩{product.productPrice?.toLocaleString() ?? 0}
             </p>
             <div className="flex gap-2 mb-4">
               {product.isRocket && (
@@ -314,7 +367,15 @@ export default function Home() {
         {/* Tab Navigation */}
         <div className="flex justify-center mb-8">
           <div className="bg-white rounded-lg p-1 shadow-sm">
-            {(['search', 'goldbox', 'coupangpl', 'recommendation'] as const).map((tab) => (
+            {(
+              [
+                'search',
+                'goldbox',
+                'coupangpl',
+                'recommendation',
+                'deeplink',
+              ] as const
+            ).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -328,6 +389,7 @@ export default function Home() {
                 {tab === 'goldbox' && 'GoldBox'}
                 {tab === 'coupangpl' && 'CoupangPL'}
                 {tab === 'recommendation' && '개인화 추천'}
+                {tab === 'deeplink' && 'Deeplink'}
               </button>
             ))}
           </div>
@@ -507,11 +569,13 @@ export default function Home() {
                       Device ID 설정
                     </h3>
                     <div className="flex items-center space-x-4">
-                      <span className={`px-3 py-1 rounded-lg text-sm font-medium ${
-                        isMobile
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
+                      <span
+                        className={`px-3 py-1 rounded-lg text-sm font-medium ${
+                          isMobile
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}
+                      >
                         {isMobile ? '📱 모바일' : '💻 PC'}
                       </span>
                       <button
@@ -531,7 +595,11 @@ export default function Home() {
                         : '💻 PC 환경: 브라우저 특성 기반 고유 ID가 자동 생성되었습니다.'}
                     </p>
                     <p className="text-xs text-gray-500">
-                      * 실제 앱에서는 {isMobile ? 'ADID/GAID/IDFA' : '브라우저 쿠키나 로그인 기반 ID'}를 사용합니다.
+                      * 실제 앱에서는{' '}
+                      {isMobile
+                        ? 'ADID/GAID/IDFA'
+                        : '브라우저 쿠키나 로그인 기반 ID'}
+                      를 사용합니다.
                     </p>
                   </div>
 
@@ -543,7 +611,11 @@ export default function Home() {
                           name="deviceIdMethod"
                           value="auto"
                           checked={deviceIdMethod === 'auto'}
-                          onChange={(e) => setDeviceIdMethod(e.target.value as 'auto' | 'manual')}
+                          onChange={(e) =>
+                            setDeviceIdMethod(
+                              e.target.value as 'auto' | 'manual'
+                            )
+                          }
                           className="mr-2"
                         />
                         자동 생성 ID 사용
@@ -554,7 +626,11 @@ export default function Home() {
                           name="deviceIdMethod"
                           value="manual"
                           checked={deviceIdMethod === 'manual'}
-                          onChange={(e) => setDeviceIdMethod(e.target.value as 'auto' | 'manual')}
+                          onChange={(e) =>
+                            setDeviceIdMethod(
+                              e.target.value as 'auto' | 'manual'
+                            )
+                          }
                           className="mr-2"
                         />
                         직접 입력
@@ -563,19 +639,28 @@ export default function Home() {
 
                     <div>
                       <label className="block text-base font-semibold text-gray-800 mb-2">
-                        Device ID {deviceIdMethod === 'manual' ? '(직접 입력)' : '(자동 생성)'}
+                        Device ID{' '}
+                        {deviceIdMethod === 'manual'
+                          ? '(직접 입력)'
+                          : '(자동 생성)'}
                       </label>
                       <input
                         type="text"
                         value={recommendationDeviceId}
-                        onChange={(e) => setRecommendationDeviceId(e.target.value)}
+                        onChange={(e) =>
+                          setRecommendationDeviceId(e.target.value)
+                        }
                         disabled={deviceIdMethod === 'auto'}
                         className={`w-full px-4 py-3 border border-gray-300 rounded-lg text-base placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                           deviceIdMethod === 'auto'
                             ? 'bg-gray-50 text-gray-700 cursor-not-allowed'
                             : 'text-gray-900 bg-white'
                         }`}
-                        placeholder={deviceIdMethod === 'manual' ? 'ADID, GAID 또는 IDFA 입력' : '자동 생성된 ID'}
+                        placeholder={
+                          deviceIdMethod === 'manual'
+                            ? 'ADID, GAID 또는 IDFA 입력'
+                            : '자동 생성된 ID'
+                        }
                       />
                     </div>
                   </div>
@@ -600,7 +685,9 @@ export default function Home() {
                     </label>
                     <select
                       value={recommendationImageSize}
-                      onChange={(e) => setRecommendationImageSize(e.target.value)}
+                      onChange={(e) =>
+                        setRecommendationImageSize(e.target.value)
+                      }
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-green-500"
                     >
                       <option value="230x230">230x230</option>
@@ -617,6 +704,84 @@ export default function Home() {
               >
                 {loading ? '로딩 중...' : '개인화 추천 상품 가져오기'}
               </button>
+            </div>
+          )}
+
+          {activeTab === 'deeplink' && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold mb-6 text-gray-800">
+                Deeplink 생성
+              </h2>
+              <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                <p className="text-sm text-gray-700 mb-2">
+                  <strong>Deeplink란?</strong> 쿠팡 상품 URL을 제휴 링크로
+                  변환합니다.
+                </p>
+                <p className="text-xs text-gray-600">
+                  * 일반 쿠팡 상품 URL을 입력하면 수수료를 받을 수 있는 제휴
+                  링크가 생성됩니다.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="md:col-span-2">
+                  <label className="block text-base font-semibold text-gray-800 mb-2">
+                    쿠팡 상품 URL
+                  </label>
+                  <input
+                    type="text"
+                    value={deeplinkUrl}
+                    onChange={(e) => setDeeplinkUrl(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="https://www.coupang.com/vp/products/1234567890"
+                  />
+                </div>
+                <div>
+                  <label className="block text-base font-semibold text-gray-800 mb-2">
+                    Sub ID (선택사항)
+                  </label>
+                  <input
+                    type="text"
+                    value={deeplinkSubId}
+                    onChange={(e) => setDeeplinkSubId(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="통계용 Sub ID"
+                  />
+                </div>
+              </div>
+              <button
+                onClick={handleDeeplink}
+                disabled={loading || !deeplinkUrl}
+                className="w-full bg-indigo-500 text-white py-3 px-6 rounded-lg text-lg font-semibold hover:bg-indigo-600 disabled:opacity-50 transition-colors"
+              >
+                {loading ? '생성 중...' : 'Deeplink 생성'}
+              </button>
+
+              {deeplinkResult && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                  <h3 className="text-lg font-bold text-green-800 mb-3">
+                    생성된 Deeplink
+                  </h3>
+                  <div className="bg-white rounded-lg p-4 border border-green-300">
+                    <a
+                      href={deeplinkResult}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline break-all text-sm"
+                    >
+                      {deeplinkResult}
+                    </a>
+                  </div>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(deeplinkResult);
+                      alert('링크가 클립보드에 복사되었습니다!');
+                    }}
+                    className="mt-4 w-full bg-green-600 text-white py-2 px-4 rounded-lg text-sm font-semibold hover:bg-green-700 transition-colors"
+                  >
+                    📋 링크 복사
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -677,7 +842,7 @@ export default function Home() {
               </div>
             </div>
 
-            {response.rCode === '0' && (
+            {response.rCode === '0' && activeTab !== 'deeplink' && (
               <div className="bg-white rounded-lg shadow-sm p-8">
                 <h3 className="text-xl font-bold mb-6 text-gray-800">
                   상품 목록
