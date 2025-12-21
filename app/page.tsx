@@ -121,19 +121,18 @@ export default function Home() {
   const [searchKeyword, setSearchKeyword] = useState('아이폰');
   const [searchLimit, setSearchLimit] = useState(10);
   const [searchImageSize, setSearchImageSize] = useState('230x230');
-  const [goldboxSubId, setGoldboxSubId] = useState('');
   const [goldboxImageSize, setGoldboxImageSize] = useState('230x230');
   const [coupangplLimit, setCoupangplLimit] = useState(20);
-  const [coupangplSubId, setCoupangplSubId] = useState('');
   const [coupangplImageSize, setCoupangplImageSize] = useState('512x512');
   const [recommendationDeviceId, setRecommendationDeviceId] = useState('');
-  const [recommendationSubId, setRecommendationSubId] = useState('');
   const [recommendationImageSize, setRecommendationImageSize] =
     useState('512x512');
   const [deeplinkUrl, setDeeplinkUrl] = useState(
     'https://www.coupang.com/vp/products/1234567890'
   );
-  const [deeplinkSubId, setDeeplinkSubId] = useState('');
+
+  // Fixed subId for all API calls
+  const fixedSubId = 'cp-sdk';
   const [deeplinkResult, setDeeplinkResult] = useState<string | null>(null);
 
   // API Handlers (same logic as before)
@@ -153,21 +152,17 @@ export default function Home() {
       } else if (type === 'goldbox') {
         endpoint = '/api/products/goldbox';
         params.append('imageSize', goldboxImageSize);
-        if (goldboxSubId) params.append('subId', goldboxSubId);
       } else if (type === 'coupangpl') {
         endpoint = '/api/products/coupangpl';
         params.append('limit', coupangplLimit.toString());
         params.append('imageSize', coupangplImageSize);
-        if (coupangplSubId) params.append('subId', coupangplSubId);
       } else if (type === 'recommendation') {
         endpoint = '/api/products/recommendation';
         params.append('deviceId', recommendationDeviceId);
         params.append('imageSize', recommendationImageSize);
-        if (recommendationSubId) params.append('subId', recommendationSubId);
       } else if (type === 'deeplink') {
         endpoint = '/api/deeplink';
         params.append('url', deeplinkUrl);
-        if (deeplinkSubId) params.append('subId', deeplinkSubId);
       }
 
       const res = await fetch(`${endpoint}?${params}`);
@@ -367,6 +362,17 @@ export default function Home() {
                       </select>
                     </div>
                   </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider ml-1">
+                      Sub ID
+                    </label>
+                    <input
+                      type="text"
+                      value={fixedSubId}
+                      readOnly
+                      className="tech-input w-full px-4 py-3 text-sm font-semibold bg-input-dark/50 cursor-not-allowed opacity-70"
+                    />
+                  </div>
                 </>
               )}
               {/* Other tabs follow the same UI pattern */}
@@ -374,13 +380,13 @@ export default function Home() {
                 <div className="space-y-6">
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider ml-1">
-                      Sub ID (Optional)
+                      Sub ID
                     </label>
                     <input
                       type="text"
-                      value={goldboxSubId}
-                      onChange={(e) => setGoldboxSubId(e.target.value)}
-                      className="tech-input w-full px-4 py-3 text-sm font-semibold"
+                      value={fixedSubId}
+                      readOnly
+                      className="tech-input w-full px-4 py-3 text-sm font-semibold bg-input-dark/50 cursor-not-allowed opacity-70"
                     />
                   </div>
                   <div className="space-y-2">
@@ -432,13 +438,13 @@ export default function Home() {
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider ml-1">
-                      Sub ID (Optional)
+                      Sub ID
                     </label>
                     <input
                       type="text"
-                      value={coupangplSubId}
-                      onChange={(e) => setCoupangplSubId(e.target.value)}
-                      className="tech-input w-full px-4 py-3 text-sm font-semibold"
+                      value={fixedSubId}
+                      readOnly
+                      className="tech-input w-full px-4 py-3 text-sm font-semibold bg-input-dark/50 cursor-not-allowed opacity-70"
                     />
                   </div>
                 </div>
@@ -462,13 +468,13 @@ export default function Home() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider ml-1">
-                        Sub ID (Optional)
+                        Sub ID
                       </label>
                       <input
                         type="text"
-                        value={recommendationSubId}
-                        onChange={(e) => setRecommendationSubId(e.target.value)}
-                        className="tech-input w-full px-4 py-3 text-sm font-semibold"
+                        value={fixedSubId}
+                        readOnly
+                        className="tech-input w-full px-4 py-3 text-sm font-semibold bg-input-dark/50 cursor-not-allowed opacity-70"
                       />
                     </div>
                     <div className="space-y-2">
@@ -504,13 +510,13 @@ export default function Home() {
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider ml-1">
-                      Sub ID (Optional)
+                      Sub ID
                     </label>
                     <input
                       type="text"
-                      value={deeplinkSubId}
-                      onChange={(e) => setDeeplinkSubId(e.target.value)}
-                      className="tech-input w-full px-4 py-3 text-sm font-semibold"
+                      value={fixedSubId}
+                      readOnly
+                      className="tech-input w-full px-4 py-3 text-sm font-semibold bg-input-dark/50 cursor-not-allowed opacity-70"
                     />
                   </div>
                 </div>
