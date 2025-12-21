@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CoupangPartnersClient } from 'coupang-partners-sdk-standalone';
+import { DEFAULT_SUB_ID } from '@/lib/constants';
 
 const client = new CoupangPartnersClient({
   accessKey: process.env.COUPANG_ACCESS_KEY || '',
@@ -10,7 +11,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const deviceId = searchParams.get('deviceId');
-    const subId = searchParams.get('subId') || undefined;
+    const subId = searchParams.get('subId') || DEFAULT_SUB_ID;
     const imageSize = searchParams.get('imageSize') || '512x512';
 
     if (!deviceId) {

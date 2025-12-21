@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CoupangPartnersClient } from 'coupang-partners-sdk-standalone';
+import { DEFAULT_SUB_ID } from '@/lib/constants';
 
 const client = new CoupangPartnersClient({
   accessKey: process.env.COUPANG_ACCESS_KEY || '',
@@ -10,12 +11,11 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '20');
-    const subId = searchParams.get('subId') || undefined;
     const imageSize = searchParams.get('imageSize') || '512x512';
 
     const response = await client.coupangPL({
       limit,
-      subId,
+      subId: DEFAULT_SUB_ID,
       imageSize: imageSize as '230x230' | '300x300' | '512x512'
     });
 
