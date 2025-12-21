@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 
 interface Product {
@@ -27,264 +27,154 @@ interface ApiResponse {
     | Product[];
 }
 
+// Minimal Icons for the new design
+const IconSearch = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="11" cy="11" r="8" />
+    <path d="m21 21-4.3-4.3" />
+  </svg>
+);
+const IconBox = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+    <path d="m3.3 7 8.7 5 8.7-5" />
+    <path d="M12 22V12" />
+  </svg>
+);
+const IconStar = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+  </svg>
+);
+const IconUser = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
+  </svg>
+);
+const IconLink = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+  </svg>
+);
+
+type TabType =
+  | 'search'
+  | 'goldbox'
+  | 'coupangpl'
+  | 'recommendation'
+  | 'deeplink';
+
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<
-    'search' | 'goldbox' | 'coupangpl' | 'recommendation' | 'deeplink'
-  >('search');
+  const [activeTab, setActiveTab] = useState<TabType>('search');
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<ApiResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Search form state
+  // States
   const [searchKeyword, setSearchKeyword] = useState('아이폰');
   const [searchLimit, setSearchLimit] = useState(10);
   const [searchImageSize, setSearchImageSize] = useState('230x230');
-
-  // GoldBox form state
   const [goldboxSubId, setGoldboxSubId] = useState('');
   const [goldboxImageSize, setGoldboxImageSize] = useState('230x230');
-
-  // CoupangPL form state
   const [coupangplLimit, setCoupangplLimit] = useState(20);
   const [coupangplSubId, setCoupangplSubId] = useState('');
   const [coupangplImageSize, setCoupangplImageSize] = useState('512x512');
-
-  // Recommendation form state
   const [recommendationDeviceId, setRecommendationDeviceId] = useState('');
   const [recommendationSubId, setRecommendationSubId] = useState('');
   const [recommendationImageSize, setRecommendationImageSize] =
     useState('512x512');
-  const [isMobile, setIsMobile] = useState(false);
-  const [deviceIdMethod, setDeviceIdMethod] = useState<'auto' | 'manual'>(
-    'auto'
-  );
-
-  // Deeplink form state
   const [deeplinkUrl, setDeeplinkUrl] = useState(
     'https://www.coupang.com/vp/products/1234567890'
   );
   const [deeplinkSubId, setDeeplinkSubId] = useState('');
   const [deeplinkResult, setDeeplinkResult] = useState<string | null>(null);
 
-  // 디바이스 감지 및 Device ID 생성
-  useEffect(() => {
-    const checkMobile = () => {
-      const userAgent = navigator.userAgent;
-      const mobile =
-        /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-          userAgent
-        );
-      setIsMobile(mobile);
-
-      if (mobile) {
-        // 모바일인 경우 실제 디바이스 ID 획득을 시도하지만, 웹에서는 제한적
-        // 대신 localStorage 기반 UUID 생성
-        let deviceId = localStorage.getItem('mobile_device_id');
-        if (!deviceId) {
-          deviceId = generateUUID();
-          localStorage.setItem('mobile_device_id', deviceId);
-        }
-        setRecommendationDeviceId(deviceId);
-      } else {
-        // PC인 경우 브라우저 기반 고유 ID 생성
-        let deviceId = localStorage.getItem('pc_device_id');
-        if (!deviceId) {
-          deviceId = generatePCDeviceId();
-          localStorage.setItem('pc_device_id', deviceId);
-        }
-        setRecommendationDeviceId(deviceId);
-      }
-    };
-
-    checkMobile();
-  }, []);
-
-  // UUID 생성 함수
-  const generateUUID = () => {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(
-      /[xy]/g,
-      function (c) {
-        const r = (Math.random() * 16) | 0;
-        const v = c === 'x' ? r : (r & 0x3) | 0x8;
-        return v.toString(16);
-      }
-    );
-  };
-
-  // PC용 디바이스 ID 생성 (브라우저 특성 기반)
-  const generatePCDeviceId = () => {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.textBaseline = 'top';
-      ctx.font = '14px Arial';
-      ctx.fillText('Device fingerprint', 2, 2);
-    }
-
-    const fingerprint = [
-      navigator.userAgent,
-      navigator.language,
-      screen.width + 'x' + screen.height,
-      new Date().getTimezoneOffset(),
-      canvas.toDataURL(),
-    ].join('|');
-
-    // 간단한 해시 생성
-    let hash = 0;
-    for (let i = 0; i < fingerprint.length; i++) {
-      const char = fingerprint.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash = hash & hash;
-    }
-
-    return Math.abs(hash).toString(16).padStart(8, '0');
-  };
-
-  // Device ID 재생성
-  const regenerateDeviceId = () => {
-    const key = isMobile ? 'mobile_device_id' : 'pc_device_id';
-    localStorage.removeItem(key);
-
-    const newDeviceId = isMobile ? generateUUID() : generatePCDeviceId();
-    localStorage.setItem(key, newDeviceId);
-    setRecommendationDeviceId(newDeviceId);
-  };
-
-  const handleSearch = async () => {
+  // API Handlers (same logic as before)
+  const handleAction = async (type: string) => {
     setLoading(true);
     setError(null);
+    setResponse(null);
     try {
-      const params = new URLSearchParams({
-        keyword: searchKeyword,
-        limit: searchLimit.toString(),
-        imageSize: searchImageSize,
-      });
+      let endpoint = '';
+      const params = new URLSearchParams();
 
-      const res = await fetch(`/api/products/search?${params}`);
+      if (type === 'search') {
+        endpoint = '/api/products/search';
+        params.append('keyword', searchKeyword);
+        params.append('limit', searchLimit.toString());
+        params.append('imageSize', searchImageSize);
+      } else if (type === 'goldbox') {
+        endpoint = '/api/products/goldbox';
+        params.append('imageSize', goldboxImageSize);
+        if (goldboxSubId) params.append('subId', goldboxSubId);
+      } else if (type === 'coupangpl') {
+        endpoint = '/api/products/coupangpl';
+        params.append('limit', coupangplLimit.toString());
+        params.append('imageSize', coupangplImageSize);
+        if (coupangplSubId) params.append('subId', coupangplSubId);
+      } else if (type === 'recommendation') {
+        endpoint = '/api/products/recommendation';
+        params.append('deviceId', recommendationDeviceId);
+        params.append('imageSize', recommendationImageSize);
+        if (recommendationSubId) params.append('subId', recommendationSubId);
+      } else if (type === 'deeplink') {
+        endpoint = '/api/deeplink';
+        params.append('url', deeplinkUrl);
+        if (deeplinkSubId) params.append('subId', deeplinkSubId);
+      }
+
+      const res = await fetch(`${endpoint}?${params}`);
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Action failed');
 
-      if (!res.ok) {
-        throw new Error(data.error || 'Search failed');
-      }
-
-      setResponse(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoldBox = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams({
-        imageSize: goldboxImageSize,
-      });
-
-      if (goldboxSubId) {
-        params.append('subId', goldboxSubId);
-      }
-
-      const res = await fetch(`/api/products/goldbox?${params}`);
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'GoldBox failed');
-      }
-
-      setResponse(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCoupangPL = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams({
-        limit: coupangplLimit.toString(),
-        imageSize: coupangplImageSize,
-      });
-
-      if (coupangplSubId) {
-        params.append('subId', coupangplSubId);
-      }
-
-      const res = await fetch(`/api/products/coupangpl?${params}`);
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'CoupangPL failed');
-      }
-
-      setResponse(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRecommendation = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams({
-        deviceId: recommendationDeviceId,
-        imageSize: recommendationImageSize,
-      });
-
-      if (recommendationSubId) {
-        params.append('subId', recommendationSubId);
-      }
-
-      const res = await fetch(`/api/products/recommendation?${params}`);
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Recommendation failed');
-      }
-
-      setResponse(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeeplink = async () => {
-    setLoading(true);
-    setError(null);
-    setDeeplinkResult(null);
-    try {
-      const params = new URLSearchParams({
-        url: deeplinkUrl,
-      });
-
-      if (deeplinkSubId) {
-        params.append('subId', deeplinkSubId);
-      }
-
-      const res = await fetch(`/api/deeplink?${params}`);
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Deeplink generation failed');
-      }
-
-      // Deeplink는 배열 형태로 반환되므로 첫 번째 항목의 shortenUrl 추출
-      if (
-        data.rCode === '0' &&
-        data.data &&
-        Array.isArray(data.data) &&
-        data.data.length > 0
-      ) {
+      if (type === 'deeplink' && data.data?.[0]?.shortenUrl) {
         setDeeplinkResult(data.data[0].shortenUrl);
       }
       setResponse(data);
@@ -297,60 +187,49 @@ export default function Home() {
 
   const renderProducts = () => {
     if (!response?.data) return null;
-
-    let products: Product[] = [];
-
-    if (Array.isArray(response.data)) {
-      products = response.data;
-    } else if (response.data.productData) {
-      products = response.data.productData;
-    }
+    const products = Array.isArray(response.data)
+      ? response.data
+      : response.data.productData || [];
 
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {products.map((product, index) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in">
+        {products.map((p, i) => (
           <div
-            key={`${product.productId}-${index}`}
-            className="border rounded-lg p-6 shadow-sm bg-white hover:shadow-md transition-shadow"
+            key={i}
+            className="tech-panel overflow-hidden group hover:border-primary/50 transition-standard"
           >
-            <Image
-              src={product.productImage}
-              alt={product.productName}
-              width={300}
-              height={192}
-              className="w-full h-48 object-cover rounded-lg mb-4"
-            />
-            <h3 className="font-semibold text-base mb-3 line-clamp-2 text-gray-800 leading-relaxed">
-              {product.productName}
-            </h3>
-            <p className="text-xl font-bold text-blue-600 mb-3">
-              ₩{product.productPrice?.toLocaleString() ?? 0}
-            </p>
-            <div className="flex gap-2 mb-4">
-              {product.isRocket && (
-                <span className="bg-blue-500 text-white text-sm px-3 py-1 rounded-lg font-medium">
-                  로켓배송
-                </span>
-              )}
-              {product.isFreeShipping && (
-                <span className="bg-green-500 text-white text-sm px-3 py-1 rounded-lg font-medium">
-                  무료배송
-                </span>
-              )}
+            <div className="relative h-40 bg-gray-800">
+              <Image
+                src={p.productImage}
+                alt={p.productName}
+                fill
+                className="object-cover group-hover:scale-105 transition-standard"
+              />
+              <div className="absolute top-2 left-2 flex gap-1">
+                {p.isRocket && (
+                  <span className="tech-badge px-1.5 py-0.5 rounded">
+                    Rocket
+                  </span>
+                )}
+              </div>
             </div>
-            {product.categoryName && (
-              <p className="text-base text-gray-600 mb-3 font-medium">
-                카테고리: {product.categoryName}
-              </p>
-            )}
-            <a
-              href={product.productUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-500 hover:underline text-base font-medium"
-            >
-              상품 보기 →
-            </a>
+            <div className="p-3">
+              <h3 className="text-sm font-medium line-clamp-2 mb-2 text-gray-200">
+                {p.productName}
+              </h3>
+              <div className="flex justify-between items-center">
+                <span className="text-primary font-bold">
+                  ₩{p.productPrice.toLocaleString()}
+                </span>
+                <a
+                  href={p.productUrl}
+                  target="_blank"
+                  className="text-[10px] text-primary uppercase font-bold tracking-tighter border border-primary/30 px-2 py-1 rounded hover:bg-primary/10 transition-standard"
+                >
+                  View →
+                </a>
+              </div>
+            </div>
           </div>
         ))}
       </div>
@@ -358,508 +237,404 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl font-bold text-center mb-8 text-gray-800">
-          Coupang Partners SDK Test
-        </h1>
-
-        {/* Tab Navigation */}
-        <div className="flex justify-center mb-8">
-          <div className="bg-white rounded-lg p-1 shadow-sm">
-            {(
-              [
-                'search',
-                'goldbox',
-                'coupangpl',
-                'recommendation',
-                'deeplink',
-              ] as const
-            ).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-6 py-3 rounded-md font-semibold text-base transition-colors ${
-                  activeTab === tab
-                    ? 'bg-blue-500 text-white shadow-md'
-                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                }`}
-              >
-                {tab === 'search' && '상품 검색'}
-                {tab === 'goldbox' && 'GoldBox'}
-                {tab === 'coupangpl' && 'CoupangPL'}
-                {tab === 'recommendation' && '개인화 추천'}
-                {tab === 'deeplink' && 'Deeplink'}
-              </button>
-            ))}
-          </div>
+    <div className="min-h-screen bg-bg-dark flex flex-col items-center py-12 px-6">
+      {/* Header Container */}
+      <header className="w-full max-w-5xl mb-12 text-center animate-fade-in">
+        <div className="inline-flex items-center gap-2 border border-primary/20 bg-primary/5 rounded-full px-4 py-1 mb-6">
+          <span className="text-primary text-xs font-bold tracking-widest leading-none">
+            &gt; COUPANG PARTNERS API
+          </span>
         </div>
+        <h1 className="text-5xl font-black text-white mb-4 tracking-tighter">
+          SDK Test Console
+        </h1>
+        <p className="text-text-muted text-sm max-w-md mx-auto leading-relaxed">
+          쿠팡 파트너스 API의 모든 기능을 테스트 결과를 실시간으로 확인하세요.
+        </p>
+      </header>
 
-        {/* Forms */}
-        <div className="bg-white rounded-lg shadow-sm p-8 mb-8">
-          {activeTab === 'search' && (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold mb-6 text-gray-800">
-                상품 검색
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <label className="block text-base font-semibold text-gray-800 mb-2">
-                    검색 키워드
-                  </label>
-                  <input
-                    type="text"
-                    value={searchKeyword}
-                    onChange={(e) => setSearchKeyword(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="검색할 상품명을 입력하세요"
-                  />
-                </div>
-                <div>
-                  <label className="block text-base font-semibold text-gray-800 mb-2">
-                    결과 수
-                  </label>
-                  <input
-                    type="number"
-                    value={searchLimit}
-                    onChange={(e) => setSearchLimit(parseInt(e.target.value))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    min="1"
-                    max="100"
-                  />
-                </div>
-                <div>
-                  <label className="block text-base font-semibold text-gray-800 mb-2">
-                    이미지 크기
-                  </label>
-                  <select
-                    value={searchImageSize}
-                    onChange={(e) => setSearchImageSize(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="72x72">72x72</option>
-                    <option value="120x120">120x120</option>
-                    <option value="230x230">230x230</option>
-                    <option value="300x300">300x300</option>
-                    <option value="600x600">600x600</option>
-                  </select>
-                </div>
+      {/* Main Content */}
+      <div className="w-full max-w-6xl space-y-8">
+        {/* Navigation Tabs */}
+        <nav
+          className="tech-panel p-1.5 flex flex-wrap gap-1 justify-center animate-fade-in"
+          style={{ animationDelay: '0.1s' }}
+        >
+          {[
+            { id: 'search', label: '상품 검색', icon: <IconSearch /> },
+            { id: 'goldbox', label: '골드박스', icon: <IconBox /> },
+            { id: 'coupangpl', label: 'CoupangPL', icon: <IconStar /> },
+            { id: 'recommendation', label: '개인화 추천', icon: <IconUser /> },
+            { id: 'deeplink', label: 'DeepLink', icon: <IconLink /> },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => {
+                setActiveTab(tab.id as TabType);
+                setResponse(null);
+                setError(null);
+              }}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-xs font-bold transition-standard ${
+                activeTab === tab.id
+                  ? 'bg-input-dark text-white'
+                  : 'text-text-muted hover:text-white'
+              }`}
+            >
+              <span className={activeTab === tab.id ? 'text-primary' : ''}>
+                {tab.icon}
+              </span>
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          {/* Left Panel: Configuration */}
+          <div
+            className="tech-panel p-8 space-y-8 animate-fade-in"
+            style={{ animationDelay: '0.2s' }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-input-dark rounded-xl flex items-center justify-center text-primary border border-border-dark">
+                {activeTab === 'search' && <IconSearch />}
+                {activeTab === 'goldbox' && <IconBox />}
+                {activeTab === 'coupangpl' && <IconStar />}
+                {activeTab === 'recommendation' && <IconUser />}
+                {activeTab === 'deeplink' && <IconLink />}
               </div>
-              <button
-                onClick={handleSearch}
-                disabled={loading || !searchKeyword}
-                className="w-full bg-blue-500 text-white py-3 px-6 rounded-lg text-lg font-semibold hover:bg-blue-600 disabled:opacity-50 transition-colors"
-              >
-                {loading ? '검색 중...' : '검색'}
-              </button>
-            </div>
-          )}
-
-          {activeTab === 'goldbox' && (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold mb-6 text-gray-800">GoldBox</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-base font-semibold text-gray-800 mb-2">
-                    Sub ID (선택사항)
-                  </label>
-                  <input
-                    type="text"
-                    value={goldboxSubId}
-                    onChange={(e) => setGoldboxSubId(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    placeholder="통계용 Sub ID"
-                  />
-                </div>
-                <div>
-                  <label className="block text-base font-semibold text-gray-800 mb-2">
-                    이미지 크기
-                  </label>
-                  <select
-                    value={goldboxImageSize}
-                    onChange={(e) => setGoldboxImageSize(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base text-gray-900 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                  >
-                    <option value="72x72">72x72</option>
-                    <option value="120x120">120x120</option>
-                    <option value="230x230">230x230</option>
-                    <option value="300x300">300x300</option>
-                    <option value="600x600">600x600</option>
-                  </select>
-                </div>
+              <div>
+                <h2 className="text-lg font-bold text-white leading-tight">
+                  {activeTab === 'search' && '상품 검색 설정'}
+                  {activeTab === 'goldbox' && '골드박스 설정'}
+                  {activeTab === 'coupangpl' && 'CoupangPL 설정'}
+                  {activeTab === 'recommendation' && '개인화 추천 설정'}
+                  {activeTab === 'deeplink' && 'DeepLink 생성'}
+                </h2>
+                <p className="text-[10px] text-primary uppercase font-bold tracking-widest opacity-80">
+                  {activeTab === 'search' && '키워드 기반 상품 검색'}
+                  {activeTab === 'goldbox' && '오늘의 골드박스 딜'}
+                  {activeTab === 'coupangpl' && '쿠팡 PL 브랜드 상품'}
+                  {activeTab === 'recommendation' &&
+                    '사용자 맞춤형 정교한 추천'}
+                  {activeTab === 'deeplink' && '제휴 링크로 즉시 변환'}
+                </p>
               </div>
-              <button
-                onClick={handleGoldBox}
-                disabled={loading}
-                className="w-full bg-orange-500 text-white py-3 px-6 rounded-lg text-lg font-semibold hover:bg-orange-600 disabled:opacity-50 transition-colors"
-              >
-                {loading ? '로딩 중...' : 'GoldBox 상품 가져오기'}
-              </button>
             </div>
-          )}
 
-          {activeTab === 'coupangpl' && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold mb-6 text-gray-800">
-                CoupangPL
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <label className="block text-base font-semibold text-gray-800 mb-2">
-                    결과 수
-                  </label>
-                  <input
-                    type="number"
-                    value={coupangplLimit}
-                    onChange={(e) =>
-                      setCoupangplLimit(parseInt(e.target.value))
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                    min="1"
-                    max="100"
-                  />
-                </div>
-                <div>
-                  <label className="block text-base font-semibold text-gray-800 mb-2">
-                    Sub ID (선택사항)
-                  </label>
-                  <input
-                    type="text"
-                    value={coupangplSubId}
-                    onChange={(e) => setCoupangplSubId(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                    placeholder="통계용 Sub ID"
-                  />
-                </div>
-                <div>
-                  <label className="block text-base font-semibold text-gray-800 mb-2">
-                    이미지 크기
-                  </label>
-                  <select
-                    value={coupangplImageSize}
-                    onChange={(e) => setCoupangplImageSize(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base text-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                  >
-                    <option value="230x230">230x230</option>
-                    <option value="300x300">300x300</option>
-                    <option value="512x512">512x512</option>
-                  </select>
-                </div>
-              </div>
-              <button
-                onClick={handleCoupangPL}
-                disabled={loading}
-                className="w-full bg-purple-500 text-white py-3 px-6 rounded-lg text-lg font-semibold hover:bg-purple-600 disabled:opacity-50 transition-colors"
-              >
-                {loading ? '로딩 중...' : 'CoupangPL 상품 가져오기'}
-              </button>
-            </div>
-          )}
-
-          {activeTab === 'recommendation' && (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold mb-6 text-gray-800">
-                개인화 추천
-              </h2>
-              <div className="space-y-6">
-                {/* Device ID 섹션 */}
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-800">
-                      Device ID 설정
-                    </h3>
-                    <div className="flex items-center space-x-4">
-                      <span
-                        className={`px-3 py-1 rounded-lg text-sm font-medium ${
-                          isMobile
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}
-                      >
-                        {isMobile ? '📱 모바일' : '💻 PC'}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={regenerateDeviceId}
-                        className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
-                      >
-                        🔄 새로 생성
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                    <p className="text-sm text-gray-600 mb-2">
-                      {isMobile
-                        ? '📱 모바일 환경: 브라우저 기반 고유 ID가 자동 생성되었습니다.'
-                        : '💻 PC 환경: 브라우저 특성 기반 고유 ID가 자동 생성되었습니다.'}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      * 실제 앱에서는{' '}
-                      {isMobile
-                        ? 'ADID/GAID/IDFA'
-                        : '브라우저 쿠키나 로그인 기반 ID'}
-                      를 사용합니다.
-                    </p>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="flex space-x-4">
-                      <label className="flex items-center">
-                        <input
-                          type="radio"
-                          name="deviceIdMethod"
-                          value="auto"
-                          checked={deviceIdMethod === 'auto'}
-                          onChange={(e) =>
-                            setDeviceIdMethod(
-                              e.target.value as 'auto' | 'manual'
-                            )
-                          }
-                          className="mr-2"
-                        />
-                        자동 생성 ID 사용
-                      </label>
-                      <label className="flex items-center">
-                        <input
-                          type="radio"
-                          name="deviceIdMethod"
-                          value="manual"
-                          checked={deviceIdMethod === 'manual'}
-                          onChange={(e) =>
-                            setDeviceIdMethod(
-                              e.target.value as 'auto' | 'manual'
-                            )
-                          }
-                          className="mr-2"
-                        />
-                        직접 입력
-                      </label>
-                    </div>
-
-                    <div>
-                      <label className="block text-base font-semibold text-gray-800 mb-2">
-                        Device ID{' '}
-                        {deviceIdMethod === 'manual'
-                          ? '(직접 입력)'
-                          : '(자동 생성)'}
-                      </label>
-                      <input
-                        type="text"
-                        value={recommendationDeviceId}
-                        onChange={(e) =>
-                          setRecommendationDeviceId(e.target.value)
-                        }
-                        disabled={deviceIdMethod === 'auto'}
-                        className={`w-full px-4 py-3 border border-gray-300 rounded-lg text-base placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
-                          deviceIdMethod === 'auto'
-                            ? 'bg-gray-50 text-gray-700 cursor-not-allowed'
-                            : 'text-gray-900 bg-white'
-                        }`}
-                        placeholder={
-                          deviceIdMethod === 'manual'
-                            ? 'ADID, GAID 또는 IDFA 입력'
-                            : '자동 생성된 ID'
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-base font-semibold text-gray-800 mb-2">
-                      Sub ID (선택사항)
+              {activeTab === 'search' && (
+                <>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider ml-1">
+                      검색 키워드
                     </label>
                     <input
                       type="text"
-                      value={recommendationSubId}
-                      onChange={(e) => setRecommendationSubId(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                      placeholder="통계용 Sub ID"
+                      value={searchKeyword}
+                      onChange={(e) => setSearchKeyword(e.target.value)}
+                      className="tech-input w-full px-4 py-3 text-sm font-semibold"
+                      placeholder="아이폰"
                     />
                   </div>
-                  <div>
-                    <label className="block text-base font-semibold text-gray-800 mb-2">
-                      이미지 크기
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider ml-1">
+                        결과 개수
+                      </label>
+                      <input
+                        type="number"
+                        value={searchLimit}
+                        onChange={(e) =>
+                          setSearchLimit(parseInt(e.target.value))
+                        }
+                        className="tech-input w-full px-4 py-3 text-sm font-semibold"
+                        min="1"
+                        max="100"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider ml-1">
+                        이미지 사이즈
+                      </label>
+                      <select
+                        value={searchImageSize}
+                        onChange={(e) => setSearchImageSize(e.target.value)}
+                        className="tech-input w-full px-4 py-3 text-sm font-semibold appearance-none"
+                      >
+                        <option value="230x230">230px</option>
+                        <option value="300x300">300px</option>
+                        <option value="512x512">512px</option>
+                      </select>
+                    </div>
+                  </div>
+                </>
+              )}
+              {/* Other tabs follow the same UI pattern */}
+              {activeTab === 'goldbox' && (
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider ml-1">
+                      Sub ID (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={goldboxSubId}
+                      onChange={(e) => setGoldboxSubId(e.target.value)}
+                      className="tech-input w-full px-4 py-3 text-sm font-semibold"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider ml-1">
+                      이미지 사이즈
                     </label>
                     <select
-                      value={recommendationImageSize}
-                      onChange={(e) =>
-                        setRecommendationImageSize(e.target.value)
-                      }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      value={goldboxImageSize}
+                      onChange={(e) => setGoldboxImageSize(e.target.value)}
+                      className="tech-input w-full px-4 py-3 text-sm font-semibold"
                     >
-                      <option value="230x230">230x230</option>
-                      <option value="300x300">300x300</option>
-                      <option value="512x512">512x512</option>
+                      <option value="230x230">230px</option>
+                      <option value="300x300">300px</option>
                     </select>
                   </div>
                 </div>
-              </div>
-              <button
-                onClick={handleRecommendation}
-                disabled={loading || !recommendationDeviceId}
-                className="w-full bg-green-500 text-white py-3 px-6 rounded-lg text-lg font-semibold hover:bg-green-600 disabled:opacity-50 transition-colors"
-              >
-                {loading ? '로딩 중...' : '개인화 추천 상품 가져오기'}
-              </button>
-            </div>
-          )}
-
-          {activeTab === 'deeplink' && (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold mb-6 text-gray-800">
-                Deeplink 생성
-              </h2>
-              <div className="bg-blue-50 p-4 rounded-lg mb-4">
-                <p className="text-sm text-gray-700 mb-2">
-                  <strong>Deeplink란?</strong> 쿠팡 상품 URL을 제휴 링크로
-                  변환합니다.
-                </p>
-                <p className="text-xs text-gray-600">
-                  * 일반 쿠팡 상품 URL을 입력하면 수수료를 받을 수 있는 제휴
-                  링크가 생성됩니다.
-                </p>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="md:col-span-2">
-                  <label className="block text-base font-semibold text-gray-800 mb-2">
-                    쿠팡 상품 URL
-                  </label>
-                  <input
-                    type="text"
-                    value={deeplinkUrl}
-                    onChange={(e) => setDeeplinkUrl(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="https://www.coupang.com/vp/products/1234567890"
-                  />
+              )}
+              {activeTab === 'coupangpl' && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider ml-1">
+                        결과 개수
+                      </label>
+                      <input
+                        type="number"
+                        value={coupangplLimit}
+                        onChange={(e) =>
+                          setCoupangplLimit(parseInt(e.target.value))
+                        }
+                        className="tech-input w-full px-4 py-3 text-sm font-semibold"
+                        min="1"
+                        max="100"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider ml-1">
+                        이미지 사이즈
+                      </label>
+                      <select
+                        value={coupangplImageSize}
+                        onChange={(e) => setCoupangplImageSize(e.target.value)}
+                        className="tech-input w-full px-4 py-3 text-sm font-semibold"
+                      >
+                        <option value="230x230">230px</option>
+                        <option value="512x512">512px</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider ml-1">
+                      Sub ID (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={coupangplSubId}
+                      onChange={(e) => setCoupangplSubId(e.target.value)}
+                      className="tech-input w-full px-4 py-3 text-sm font-semibold"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-base font-semibold text-gray-800 mb-2">
-                    Sub ID (선택사항)
-                  </label>
-                  <input
-                    type="text"
-                    value={deeplinkSubId}
-                    onChange={(e) => setDeeplinkSubId(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="통계용 Sub ID"
-                  />
+              )}
+              {activeTab === 'recommendation' && (
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider ml-1">
+                      Device ID
+                    </label>
+                    <input
+                      type="text"
+                      value={recommendationDeviceId}
+                      onChange={(e) =>
+                        setRecommendationDeviceId(e.target.value)
+                      }
+                      className="tech-input w-full px-4 py-3 text-sm font-semibold"
+                      placeholder="ADID / UUID"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider ml-1">
+                        Sub ID (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={recommendationSubId}
+                        onChange={(e) => setRecommendationSubId(e.target.value)}
+                        className="tech-input w-full px-4 py-3 text-sm font-semibold"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider ml-1">
+                        이미지 사이즈
+                      </label>
+                      <select
+                        value={recommendationImageSize}
+                        onChange={(e) =>
+                          setRecommendationImageSize(e.target.value)
+                        }
+                        className="tech-input w-full px-4 py-3 text-sm font-semibold"
+                      >
+                        <option value="300x300">300px</option>
+                        <option value="512x512">512px</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
+              {activeTab === 'deeplink' && (
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider ml-1">
+                      쿠팡 상품 URL
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={deeplinkUrl}
+                      onChange={(e) => setDeeplinkUrl(e.target.value)}
+                      className="tech-input w-full px-4 py-3 text-sm font-semibold resize-none"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider ml-1">
+                      Sub ID (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={deeplinkSubId}
+                      onChange={(e) => setDeeplinkSubId(e.target.value)}
+                      className="tech-input w-full px-4 py-3 text-sm font-semibold"
+                    />
+                  </div>
+                </div>
+              )}
+
               <button
-                onClick={handleDeeplink}
-                disabled={loading || !deeplinkUrl}
-                className="w-full bg-indigo-500 text-white py-3 px-6 rounded-lg text-lg font-semibold hover:bg-indigo-600 disabled:opacity-50 transition-colors"
+                onClick={() => handleAction(activeTab)}
+                disabled={loading}
+                className="tech-button w-full py-4 text-sm flex justify-center items-center gap-2 group disabled:opacity-50"
               >
-                {loading ? '생성 중...' : 'Deeplink 생성'}
+                {loading ? (
+                  <div className="w-4 h-4 border-2 border-bg-dark/30 border-t-bg-dark rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <span className="opacity-70 font-mono tracking-tighter">
+                      &gt;
+                    </span>
+                    API 실행
+                  </>
+                )}
               </button>
 
-              {deeplinkResult && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-                  <h3 className="text-lg font-bold text-green-800 mb-3">
-                    생성된 Deeplink
-                  </h3>
-                  <div className="bg-white rounded-lg p-4 border border-green-300">
-                    <a
-                      href={deeplinkResult}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline break-all text-sm"
-                    >
-                      {deeplinkResult}
-                    </a>
+              {deeplinkResult && activeTab === 'deeplink' && (
+                <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl space-y-2 animate-fade-in">
+                  <span className="text-[10px] font-bold text-primary uppercase tracking-widest">
+                    제휴 링크 결과
+                  </span>
+                  <div className="bg-input-dark p-3 rounded-lg text-xs font-mono text-white break-all mb-4 border border-border-dark leading-relaxed">
+                    {deeplinkResult}
                   </div>
                   <button
                     onClick={() => {
                       navigator.clipboard.writeText(deeplinkResult);
-                      alert('링크가 클립보드에 복사되었습니다!');
+                      alert('Copied!');
                     }}
-                    className="mt-4 w-full bg-green-600 text-white py-2 px-4 rounded-lg text-sm font-semibold hover:bg-green-700 transition-colors"
+                    className="w-full bg-input-dark text-primary border border-primary/30 py-2.5 rounded-lg text-xs font-bold hover:bg-primary/10 transition-standard"
                   >
-                    📋 링크 복사
+                    📋 링크 주소 복사
                   </button>
                 </div>
               )}
             </div>
-          )}
-        </div>
-
-        {/* Error Display */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg mb-8">
-            <strong className="text-lg">Error:</strong>{' '}
-            <span className="text-base">{error}</span>
           </div>
-        )}
 
-        {/* Response Display */}
-        {response && (
-          <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow-sm p-8">
-              <h3 className="text-xl font-bold mb-6 text-gray-800">
-                API 응답 정보
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-base">
-                <div>
-                  <span className="font-semibold text-gray-800">
-                    응답 코드:
-                  </span>
-                  <span
-                    className={`ml-2 px-3 py-1 rounded-lg text-sm font-medium ${
-                      response.rCode === '0'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}
-                  >
-                    {response.rCode}
-                  </span>
-                </div>
-                <div>
-                  <span className="font-semibold text-gray-800">메시지:</span>
-                  <span className="ml-2 text-gray-700">
-                    {response.rMessage}
-                  </span>
-                </div>
-                {response.data &&
-                  !Array.isArray(response.data) &&
-                  response.data.landingUrl && (
-                    <div className="md:col-span-2">
-                      <span className="font-semibold text-gray-800">
-                        랜딩 URL:
-                      </span>
-                      <a
-                        href={response.data.landingUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="ml-2 text-blue-500 hover:underline text-base"
-                      >
-                        {response.data.landingUrl}
-                      </a>
-                    </div>
-                  )}
+          {/* Right Panel: Results */}
+          <div
+            className="tech-panel p-8 min-h-[500px] flex flex-col animate-fade-in"
+            style={{ animationDelay: '0.3s' }}
+          >
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-lg font-bold text-white">실시간 결과</h2>
+              <div className="px-2 py-0.5 rounded text-[10px] font-bold border border-primary/30 text-primary bg-primary/5 uppercase tracking-widest">
+                {response ? 'Success' : 'Ready'}
               </div>
             </div>
 
-            {response.rCode === '0' && activeTab !== 'deeplink' && (
-              <div className="bg-white rounded-lg shadow-sm p-8">
-                <h3 className="text-xl font-bold mb-6 text-gray-800">
-                  상품 목록
-                  <span className="text-base text-gray-600 ml-2 font-medium">
-                    (
-                    {Array.isArray(response.data)
-                      ? response.data.length
-                      : response.data?.productData?.length || 0}
-                    개)
-                  </span>
-                </h3>
-                {renderProducts()}
-              </div>
-            )}
+            <div className="flex-1 flex flex-col">
+              {error && (
+                <div className="p-5 bg-red-900/10 border border-red-900/40 rounded-xl mb-6">
+                  <div className="flex items-center gap-2 text-red-400 mb-1">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="8" x2="12" y2="12" />
+                      <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                    <span className="text-[10px] font-bold uppercase tracking-widest">
+                      Error Trace
+                    </span>
+                  </div>
+                  <p className="text-xs font-semibold text-red-200/80 leading-relaxed">
+                    {error}
+                  </p>
+                </div>
+              )}
+
+              {response ? (
+                <div className="space-y-6">
+                  {renderProducts()}
+                  <details className="mt-8 group">
+                    <summary className="list-none text-[10px] font-bold text-text-muted hover:text-white cursor-pointer transition-standard flex items-center gap-2 py-2">
+                      <span className="group-open:rotate-90 transition-standard inline-block">
+                        ▶
+                      </span>{' '}
+                      SHOW RAW JSON
+                    </summary>
+                    <pre className="mt-4 p-5 bg-input-dark rounded-xl text-[10px] font-mono text-primary/80 overflow-auto max-h-[300px] border border-border-dark leading-relaxed">
+                      {JSON.stringify(response, null, 2)}
+                    </pre>
+                  </details>
+                </div>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center text-center opacity-40">
+                  <div className="w-16 h-16 bg-input-dark rounded-2xl flex items-center justify-center mb-6 text-gray-500 border border-border-dark">
+                    <IconSearch />
+                  </div>
+                  <h3 className="text-sm font-bold text-white mb-2">
+                    준비되었습니다
+                  </h3>
+                  <p className="text-[10px] font-bold text-text-muted max-w-[200px] leading-relaxed">
+                    설정을 완료하고 API 실행 버튼을 클릭하세요. 실시간 데이터가
+                    여기에 표시됩니다.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
-        )}
+        </div>
       </div>
+
+      <footer
+        className="mt-20 text-center animate-fade-in"
+        style={{ animationDelay: '0.4s' }}
+      >
+        <p className="text-text-muted text-[10px] font-bold uppercase tracking-[0.2em] opacity-50">
+          &copy; 2025 Coupang Partners SDK Test. All rights reserved.
+        </p>
+      </footer>
     </div>
   );
 }

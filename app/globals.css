@@ -1,26 +1,110 @@
 @import "tailwindcss";
 
+@theme {
+  --color-primary: #00ffd5; /* Cyan accent */
+  --color-primary-hover: #00e6c0;
+  --color-bg-dark: #0a0c12;
+  --color-panel-dark: #151921;
+  --color-input-dark: #1c212b;
+  --color-border-dark: #2d333b;
+  --color-text-muted: #8b949e;
+  
+  --font-sans: var(--font-geist-sans), Inter, system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+
+  --shadow-tech: 0 0 20px rgba(0, 255, 213, 0.1);
+  --shadow-tech-strong: 0 0 30px rgba(0, 255, 213, 0.2);
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #0a0c12;
+  --foreground: #ffffff;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Tech/Cyberpunk UI elements */
+.tech-panel {
+  background: #151921;
+  border: 1px solid #2d333b;
+  border-radius: 12px;
+}
+
+.tech-input {
+  background: #1c212b;
+  border: 1px solid #2d333b;
+  color: white;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.tech-input:focus {
+  border-color: #00ffd5;
+  box-shadow: 0 0 0 1px rgba(0, 255, 213, 0.2);
+  outline: none;
+}
+
+.tech-button {
+  background: #00ffd5;
+  color: #0a0c12;
+  font-weight: 800;
+  border-radius: 8px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tech-button:hover {
+  background: #00e6c0;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 255, 213, 0.3);
+}
+
+.tech-button:active {
+  transform: translateY(0);
+}
+
+.tech-tab {
+  color: #8b949e;
+  transition: all 0.2s ease;
+}
+
+.tech-tab.active {
+  background: #1c212b;
+  color: white;
+}
+
+.tech-badge {
+  background: rgba(0, 255, 213, 0.1);
+  border: 1px solid rgba(0, 255, 213, 0.2);
+  color: #00ffd5;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Custom transitions */
+.transition-standard {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Fade in animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeInUp 0.5s ease-out forwards;
 }
