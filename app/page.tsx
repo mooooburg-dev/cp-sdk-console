@@ -182,9 +182,15 @@ export default function Home() {
 
   const renderProducts = () => {
     if (!response?.data) return null;
+    // Deeplink API doesn't return products, skip rendering
+    if (activeTab === 'deeplink') return null;
+
     const products = Array.isArray(response.data)
       ? response.data
       : response.data.productData || [];
+
+    // Skip if no valid products with required fields
+    if (products.length === 0 || !products[0]?.productPrice) return null;
 
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in">
@@ -269,7 +275,7 @@ export default function Home() {
                 setResponse(null);
                 setError(null);
               }}
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-xs font-bold transition-standard ${
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-xs font-bold transition-standard cursor-pointer ${
                 activeTab === tab.id
                   ? 'bg-input-dark text-white'
                   : 'text-text-muted hover:text-white'
@@ -327,6 +333,9 @@ export default function Home() {
                       type="text"
                       value={searchKeyword}
                       onChange={(e) => setSearchKeyword(e.target.value)}
+                      onKeyDown={(e) =>
+                        e.key === 'Enter' && handleAction('search')
+                      }
                       className="tech-input w-full px-4 py-3 text-sm font-semibold"
                       placeholder="아이폰"
                     />
@@ -342,6 +351,9 @@ export default function Home() {
                         onChange={(e) =>
                           setSearchLimit(parseInt(e.target.value))
                         }
+                        onKeyDown={(e) =>
+                          e.key === 'Enter' && handleAction('search')
+                        }
                         className="tech-input w-full px-4 py-3 text-sm font-semibold"
                         min="1"
                         max="100"
@@ -354,6 +366,9 @@ export default function Home() {
                       <select
                         value={searchImageSize}
                         onChange={(e) => setSearchImageSize(e.target.value)}
+                        onKeyDown={(e) =>
+                          e.key === 'Enter' && handleAction('search')
+                        }
                         className="tech-input w-full px-4 py-3 text-sm font-semibold appearance-none"
                       >
                         <option value="230x230">230px</option>
@@ -396,6 +411,9 @@ export default function Home() {
                     <select
                       value={goldboxImageSize}
                       onChange={(e) => setGoldboxImageSize(e.target.value)}
+                      onKeyDown={(e) =>
+                        e.key === 'Enter' && handleAction('goldbox')
+                      }
                       className="tech-input w-full px-4 py-3 text-sm font-semibold"
                     >
                       <option value="230x230">230px</option>
@@ -417,6 +435,9 @@ export default function Home() {
                         onChange={(e) =>
                           setCoupangplLimit(parseInt(e.target.value))
                         }
+                        onKeyDown={(e) =>
+                          e.key === 'Enter' && handleAction('coupangpl')
+                        }
                         className="tech-input w-full px-4 py-3 text-sm font-semibold"
                         min="1"
                         max="100"
@@ -429,6 +450,9 @@ export default function Home() {
                       <select
                         value={coupangplImageSize}
                         onChange={(e) => setCoupangplImageSize(e.target.value)}
+                        onKeyDown={(e) =>
+                          e.key === 'Enter' && handleAction('coupangpl')
+                        }
                         className="tech-input w-full px-4 py-3 text-sm font-semibold"
                       >
                         <option value="230x230">230px</option>
@@ -461,6 +485,9 @@ export default function Home() {
                       onChange={(e) =>
                         setRecommendationDeviceId(e.target.value)
                       }
+                      onKeyDown={(e) =>
+                        e.key === 'Enter' && handleAction('recommendation')
+                      }
                       className="tech-input w-full px-4 py-3 text-sm font-semibold"
                       placeholder="ADID / UUID"
                     />
@@ -486,6 +513,9 @@ export default function Home() {
                         onChange={(e) =>
                           setRecommendationImageSize(e.target.value)
                         }
+                        onKeyDown={(e) =>
+                          e.key === 'Enter' && handleAction('recommendation')
+                        }
                         className="tech-input w-full px-4 py-3 text-sm font-semibold"
                       >
                         <option value="300x300">300px</option>
@@ -505,6 +535,12 @@ export default function Home() {
                       rows={3}
                       value={deeplinkUrl}
                       onChange={(e) => setDeeplinkUrl(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleAction('deeplink');
+                        }
+                      }}
                       className="tech-input w-full px-4 py-3 text-sm font-semibold resize-none"
                     />
                   </div>
@@ -525,7 +561,7 @@ export default function Home() {
               <button
                 onClick={() => handleAction(activeTab)}
                 disabled={loading}
-                className="tech-button w-full py-4 text-sm flex justify-center items-center gap-2 group disabled:opacity-50"
+                className="tech-button w-full py-4 text-sm flex justify-center items-center gap-2 group disabled:opacity-50 cursor-pointer"
               >
                 {loading ? (
                   <div className="w-4 h-4 border-2 border-bg-dark/30 border-t-bg-dark rounded-full animate-spin" />
@@ -552,7 +588,7 @@ export default function Home() {
                       navigator.clipboard.writeText(deeplinkResult);
                       alert('Copied!');
                     }}
-                    className="w-full bg-input-dark text-primary border border-primary/30 py-2.5 rounded-lg text-xs font-bold hover:bg-primary/10 transition-standard"
+                    className="w-full bg-input-dark text-primary border border-primary/30 py-2.5 rounded-lg text-xs font-bold hover:bg-primary/10 transition-standard cursor-pointer"
                   >
                     📋 링크 주소 복사
                   </button>
