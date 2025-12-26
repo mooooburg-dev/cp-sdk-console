@@ -238,7 +238,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-bg-dark flex flex-col items-center py-12 px-6">
+    <div className="min-h-screen flex flex-col items-center py-12 px-6">
       {/* Header Container */}
       <header className="w-full max-w-5xl mb-12 text-center animate-fade-in">
         <div className="inline-flex items-center gap-2 border border-primary/20 bg-primary/5 rounded-full px-4 py-1 mb-6">

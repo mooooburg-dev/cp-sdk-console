@@ -27,6 +27,22 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  position: relative;
+  min-height: 100vh;
+}
+
+/* Gradient background overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 100% 80% at 0% 0%, rgba(0, 255, 213, 0.25) 0%, transparent 45%),
+    radial-gradient(ellipse 80% 60% at 100% 100%, rgba(0, 100, 150, 0.3) 0%, transparent 45%),
+    radial-gradient(ellipse 50% 50% at 50% 30%, rgba(0, 180, 160, 0.08) 0%, transparent 60%),
+    linear-gradient(160deg, #0a0e14 0%, #0f1620 40%, #121a28 70%, #0a0e14 100%);
+  pointer-events: none;
+  z-index: -1;
 }
 
 /* Tech/Cyberpunk UI elements */
